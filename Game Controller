@@ -1,0 +1,243 @@
+using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
+
+
+public class GameController : MonoBehaviour
+{
+    public GameObject[] hazards;
+    public Vector3 spawnValues;
+    public int hazardCount;
+    public float spawnWait;
+    public float startWait;
+    public float waveWait;
+
+    public Text ScoreText;
+    public Text restartText;
+    public Text gameOverText;
+    public Text winText;
+
+    private bool gameOver;
+    private bool restart;
+    private int score;
+
+    private bool tMode;
+    public Text tModeText;
+    public GameObject player;
+    public Transform playerSpawn;
+
+    private float timer;
+    private bool canCount = true;
+    private bool doOnce = false;
+    [SerializeField] private Text uitext;
+    [SerializeField] private float mainTimer;
+
+    public AudioSource audioSource;
+    public AudioSource audioSource1;
+    public AudioSource audioSource2;
+
+    private bool alive;
+
+    public GameObject background;
+    public bool bgover;
+    public float bgspeed;
+
+    void Start()
+    {
+        audioSource.Play();
+        audioSource1.Stop();
+        audioSource2.Stop();
+
+        timer = mainTimer;
+        tMode = false;
+        tModeText.text = "";
+        uitext.text = "";
+
+        gameOver = false;
+        restart = false;
+        
+        restartText.text = "";
+        gameOverText.text = "";
+        winText.text = "";
+        score = 0;
+        UpdateScore();
+        StartCoroutine(SpawnWaves());
+
+        Instantiate(player, playerSpawn.position, playerSpawn.rotation);
+
+        alive = true;
+        bgover = false;
+        
+
+
+    }
+
+    
+
+    void Update()
+    {
+        if (tMode == true)
+        {
+            if (timer >= 0.0f && canCount)
+            {
+                timer -= Time.deltaTime;
+                uitext.text = timer.ToString("F");
+            }
+            else if (timer <= 0.0f && !doOnce)
+            {
+                canCount = false;
+                doOnce = true;
+                uitext.text = "0.00";
+                winText.text = "GAME CREATED BY TAYLOR THOMPSON";
+                timer = 0.0f;
+                
+                alive = true;
+
+               
+                audioSource.Stop();
+                audioSource1.Play();
+                audioSource2.Stop();
+                
+
+                bgover = true;
+            }
+            
+        }
+
+        if (restart == true)
+        {
+            if (Input.GetKeyDown(KeyCode.M))
+            {
+                SceneManager.LoadScene("Main");
+            }
+        
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+               
+                audioSource.Play();
+                audioSource1.Stop();
+                audioSource2.Stop();
+
+                tMode = true;
+                tModeText.text = "";
+                uitext.text = "";
+
+                gameOver = false;
+                restart = false;
+                
+                restartText.text = "";
+                gameOverText.text = "";
+                winText.text = "";
+                score = 0;
+                UpdateScore();
+                StartCoroutine(SpawnWaves());
+
+                timer = mainTimer;
+                canCount = true;
+                doOnce = false;
+
+                bgover = false;
+
+                if (alive == false)
+                {
+                    Instantiate(player, playerSpawn.position, playerSpawn.rotation);
+                }
+                
+            }
+
+            }
+
+        if (Input.GetKey("escape"))
+        {
+            Application.Quit();
+        }
+        
+
+        if (bgover == true)
+        {
+            BGScroller bg = background.GetComponent<BGScroller>();
+            bg.scrollSpeed = -20;
+            
+        }
+        else if (bgover == false)
+        {
+            BGScroller bg = background.GetComponent<BGScroller>();
+            bg.scrollSpeed = bgspeed;
+            
+        }
+    }
+    IEnumerator SpawnWaves()
+    {
+        yield return new WaitForSeconds(startWait);
+        while (true)
+        {
+            for (int i = 0; i < hazardCount; i++)
+            {
+                GameObject hazard = hazards[Random.Range(0, hazards.Length)];
+                Vector3 spawnPosition = new Vector3(Random.Range(-spawnValues.x, spawnValues.x), spawnValues.y, spawnValues.z);
+                Quaternion spawnRotation = Quaternion.identity;
+                Instantiate(hazard, spawnPosition, spawnRotation);
+                yield return new WaitForSeconds(spawnWait);
+            }
+            yield return new WaitForSeconds(waveWait);
+
+            if (gameOver || timer <= 0.0f)
+            {
+                tModeText.text = "Press 'T' for Timed Mode!";
+                
+                restartText.text = "Press 'M' for Restart";
+                restart = true;
+                break;
+            }
+
+        }
+
+
+    }
+    public void AddScore(int newScoreValue)
+    {
+        score += newScoreValue;
+        UpdateScore();
+    }
+    
+
+    void UpdateScore()
+    {
+        ScoreText.text = "Points: " + score;
+
+        if (score >= 100 && tMode == false && alive == true)
+        {
+            winText.text = "GAME CREATED BY TAYLOR THOMPSON";
+            tMode = false;
+            gameOver = true;
+            restart = true;
+
+            uitext.text = "";
+            audioSource1.Play();
+            audioSource.Stop();
+
+            bgover = true;
+            
+        }
+        
+    }
+    public void GameOver()
+    {
+            uitext.text = "";
+            gameOverText.text = "Game Over!";
+            tMode = false;
+            gameOver = true;
+            audioSource1.Stop();
+            audioSource2.Play();
+            audioSource.Stop();
+
+            timer = mainTimer;
+            canCount = true;
+            doOnce = false;
+
+            alive = false;
+        
+        
+    }
+}
